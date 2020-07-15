@@ -1074,7 +1074,7 @@ source file may help understanding ACPI opcodes.
 
 \emph{Note}: Patches of different \texttt{Find} and \texttt{Replace} lengths
 are unsupported as they may corrupt ACPI tables and make you system unstable
-due to area relocation. If you need such changes you may utilities ``proxy''
+due to area relocation. If you need such changes you may utilise ``proxy''
 patching or \texttt{NOP} the remaining area.
 
 \subsection{Quirks Properties}\label{acpipropsquirks}
@@ -1378,6 +1378,7 @@ To view their current state use \texttt{pmset -g} command in Terminal.
 
   \emph{Note}: This quirk may potentially weaken firmware security, please use
   \texttt{RebuildAppleMemoryMap} if your firmware supports memory attributes table (MAT).
+  Refer to \texttt{OCABC: MAT support is 1/0} log entry to determine whether MAT is supported.
 
 \item
   \texttt{ForceExitBootServices}\\
@@ -4430,7 +4431,8 @@ similar to the builtin text interface.
 
 OpenCanopy requires graphical resources located in \texttt{Resources} directory to run.
 Sample resources (fonts and images) can be found in
-\href{https://github.com/acidanthera/OcBinaryData}{OcBinaryData repository}.
+\href{https://github.com/acidanthera/OcBinaryData}{OcBinaryData repository}. You can find customised icons over the internet 
+(e.g. \href{https://github.com/blackosx/OpenCanopyIcons}{here} or \href{https://applelife.ru/threads/kastomizacija-opencanopy.2945020/}{there}).
 
 OpenCanopy provides full support for \texttt{PickerAttributes} and offers a configurable
 builtin icon set. The default chosen icon set depends on the \texttt{DefaultBackgroundColor}
@@ -5763,10 +5765,10 @@ you will need \texttt{debug=0x8} boot argument.
 
   Unfortunately for some quirks like \texttt{RebuildAppleMemoryMap},
   \texttt{EnableWriteUnprotector}, \texttt{ProtectMemoryRegions},
-  \texttt{RebuildAppleMemoryMap}, \texttt{SetupVirtualMap},
-  and \texttt{SyncRuntimePermissions} there is no definite approach even on similar
-  systems, so trying all their combinations may be required for optimal setup.
-  Refer to individual quirk descriptions in this document for more details.
+  \texttt{SetupVirtualMap}, and \texttt{SyncRuntimePermissions} there
+  is no definite approach even on similar systems, so trying all their
+  combinations may be required for optimal setup. Refer to individual quirk
+  descriptions in this document for more details.
 
 \end{enumerate}
 
