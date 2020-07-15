@@ -296,8 +296,5 @@ VOID
 OcMiscUefiQuirksLoaded (
   IN OC_GLOBAL_CONFIG   *Config
   );
-VOID
-OcLoadBooterUefiSupport (
-  IN OC_GLOBAL_CONFIG  *Config
-  );
+
 #endif // OPEN_CORE_H

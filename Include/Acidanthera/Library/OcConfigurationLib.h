@@ -78,7 +78,6 @@
 /// ACPI quirks.
 ///
 #define OC_ACPI_QUIRKS_FIELDS(_, __) \
-  _(BOOLEAN                     , EnableForAll        ,     , FALSE  , ()) \
   _(BOOLEAN                     , FadtEnableReset     ,     , FALSE  , ()) \
   _(BOOLEAN                     , NormalizeHeaders    ,     , FALSE  , ()) \
   _(BOOLEAN                     , RebaseRegions       ,     , FALSE  , ()) \
@@ -118,8 +117,7 @@
   _(BOOLEAN                     , DisableSingleUser         ,     , FALSE  , ()) \
   _(BOOLEAN                     , DisableVariableWrite      ,     , FALSE  , ()) \
   _(BOOLEAN                     , DiscardHibernateMap       ,     , FALSE  , ()) \
-  _(BOOLEAN                     , EnableForAll              ,     , FALSE  , ()) \
- _(BOOLEAN                     , EnableSafeModeSlide       ,     , FALSE  , ()) \
+  _(BOOLEAN                     , EnableSafeModeSlide       ,     , FALSE  , ()) \
   _(BOOLEAN                     , EnableWriteUnprotector    ,     , FALSE  , ()) \
   _(BOOLEAN                     , ForceExitBootServices     ,     , FALSE  , ()) \
   _(BOOLEAN                     , ProtectMemoryRegions      ,     , FALSE  , ()) \
