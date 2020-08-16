@@ -34,11 +34,15 @@
   Link.c
   CommonPatches.c
   KernelCollection.c
+  KernelVersion.c
+  KxldState.c
   PrelinkedContext.c
   PrelinkedInternal.h
   PrelinkedKext.c
   Vtables.c
   CachelessContext.c
+  MkextContext.c
+  MkextReader.c
 
 [Packages]
   MdePkg/MdePkg.dec

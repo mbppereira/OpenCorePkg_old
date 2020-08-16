@@ -15,6 +15,7 @@
 #ifndef OC_APPLE_KERNEL_LIB_H
 #define OC_APPLE_KERNEL_LIB_H
 
+#include <IndustryStandard/AppleMkext.h>
 #include <Library/OcCpuLib.h>
 #include <Library/OcMachoLib.h>
 #include <Library/OcXmlLib.h>
@@ -23,10 +24,14 @@
 #define PRELINK_KERNEL_IDENTIFIER "__kernel__"
 #define PRELINK_KPI_IDENTIFIER_PREFIX "com.apple.kpi."
 
-#define PRELINK_INFO_SEGMENT "__PRELINK_INFO"
-#define PRELINK_INFO_SECTION "__info"
-#define PRELINK_TEXT_SEGMENT "__PRELINK_TEXT"
-#define PRELINK_TEXT_SECTION "__text"
+#define PRELINK_INFO_SEGMENT  "__PRELINK_INFO"
+#define PRELINK_INFO_SECTION  "__info"
+#define PRELINK_TEXT_SEGMENT  "__PRELINK_TEXT"
+#define PRELINK_TEXT_SECTION  "__text"
+#define PRELINK_STATE_SEGMENT "__PRELINK_STATE"
+#define PRELINK_STATE_SECTION_KERNEL "__kernel"
+#define PRELINK_STATE_SECTION_KEXTS  "__kexts"
+
 
 #define PRELINK_INFO_DICTIONARY_KEY               "_PrelinkInfoDictionary"
 #define PRELINK_INFO_KMOD_INFO_KEY                "_PrelinkKmodInfo"
@@ -35,6 +40,8 @@
 #define PRELINK_INFO_EXECUTABLE_LOAD_ADDR_KEY     "_PrelinkExecutableLoadAddr"
 #define PRELINK_INFO_EXECUTABLE_SOURCE_ADDR_KEY   "_PrelinkExecutableSourceAddr"
 #define PRELINK_INFO_EXECUTABLE_SIZE_KEY          "_PrelinkExecutableSize"
+#define PRELINK_INFO_LINK_STATE_ADDR_KEY          "_PrelinkLinkState"
+#define PRELINK_INFO_LINK_STATE_SIZE_KEY          "_PrelinkLinkStateSize"
 
 #define INFO_BUNDLE_IDENTIFIER_KEY                "CFBundleIdentifier"
 #define INFO_BUNDLE_EXECUTABLE_KEY                "CFBundleExecutable"
@@ -48,7 +55,14 @@
 #define OS_BUNDLE_REQUIRED_SAFE_BOOT              "Safe Boot"
 
 
+#define MKEXT_INFO_DICTIONARIES_KEY               "_MKEXTInfoDictionaries"
+#define MKEXT_BUNDLE_PATH_KEY                     "_MKEXTBundlePath"
+#define MKEXT_EXECUTABLE_RELATIVE_PATH_KEY        "_MKEXTExecutableRelativePath"
+#define MKEXT_EXECUTABLE_KEY                      "_MKEXTExecutable"
+
+
 #define PRELINK_INFO_INTEGER_ATTRIBUTES           "size=\"64\""
+#define MKEXT_INFO_INTEGER_ATTRIBUTES             "size=\"32\""
 
 #define KC_REGION_SEGMENT_PREFIX                  "__REGION"
 #define KC_REGION0_SEGMENT                        "__REGION0"
@@ -65,6 +79,17 @@
 // Failsafe default for plist reserve allocation.
 //
 #define PRELINK_INFO_RESERVE_SIZE (5U * 1024U * 1024U)
+
+//
+// Size to reserve per kext for plist expansion.
+// Additional properties are added to prelinked and mkext v2, this should account for those.
+//
+#define PLIST_EXPANSION_SIZE      512
+
+//
+// Make integral kernel version.
+//
+#define KERNEL_VERSION(A, B, C) ((A) * 10000 + (B) * 100 + (C))
 
 //
 // Prelinked context used for kernel modification.
@@ -112,6 +137,38 @@ typedef struct {
   //
   MACH_SECTION_64          *PrelinkedTextSection;
   //
+  // Pointer to PRELINK_STATE_SEGMENT (for 10.6.8).
+  //
+  MACH_SEGMENT_COMMAND_64  *PrelinkedStateSegment;
+  //
+  // Pointer to PRELINK_STATE_SECTION_KERNEL (for 10.6.8).
+  //
+  MACH_SECTION_64          *PrelinkedStateSectionKernel;
+  //
+  // Pointer to PRELINK_STATE_SECTION_KEXTS (for 10.6.8).
+  //
+  MACH_SECTION_64          *PrelinkedStateSectionKexts;
+  //
+  // Contents of PRELINK_STATE_SECTION_KERNEL section (for 10.6.8).
+  //
+  VOID                     *PrelinkedStateKernel;
+  //
+  // Contents of PRELINK_STATE_SECTION_KEXTS (for 10.6.8).
+  //
+  VOID                     *PrelinkedStateKexts;
+  //
+  // PRELINK_STATE_SECTION_KEXTS original load address.
+  //
+  UINT64                   PrelinkedStateKextsAddress;
+  //
+  // PRELINK_STATE_SECTION_KERNEL section size (for 10.6.8).
+  //
+  UINT32                   PrelinkedStateKernelSize;
+  //
+  // PRELINK_STATE_SECTION_KEXTS section size (for 10.6.8).
+  //
+  UINT32                   PrelinkedStateKextsSize;
+  //
   // Pointer to KC_LINKEDIT_SEGMENT (for KC mode).
   //
   MACH_SEGMENT_COMMAND_64  *LinkEditSegment;
@@ -145,6 +202,10 @@ typedef struct {
   // This reference is used for quick path during kext injection.
   //
   XML_NODE                 *KextList;
+  //
+  // Plist scratch buffer used when updating values.
+  //
+  CHAR8                    *KextScratchBuffer;
   //
   // Buffers allocated from pool for internal needs.
   //
@@ -285,6 +346,62 @@ typedef struct {
   BOOLEAN               BuiltInKextsValid;
 } CACHELESS_CONTEXT;
 
+//
+// Mkext context.
+//
+typedef struct {
+  //
+  // Current version of mkext. It takes a reference of user-allocated
+  // memory block from pool, and grows if needed.
+  //
+  UINT8                    *Mkext;
+  //
+  // Exportable mkext size, i.e. the payload size. Also references user field.
+  //
+  UINT32                   MkextSize;
+  //
+  // Currently allocated mkext size, used for reduced rellocations.
+  //
+  UINT32                   MkextAllocSize;
+  //
+  // Mkext header.
+  //
+  MKEXT_HEADER_ANY         *MkextHeader;
+  //
+  // Version.
+  //
+  UINT32                    MkextVersion;
+  //
+  // CPU type.
+  //
+  BOOLEAN                   Is64Bit;
+  //
+  // Current number of kexts.
+  //
+  UINT32                    NumKexts;
+  //
+  // Max kexts for allocation.
+  //
+  UINT32                    NumMaxKexts;
+  //
+  // Offset of mkext plist.
+  //
+  UINT32                    MkextInfoOffset;
+  //
+  // Copy of mkext plist used for XML_DOCUMENT.
+  // Freed upon context destruction.
+  //
+  UINT8                    *MkextInfo;
+  //
+  // Parsed instance of mkext plist. New entries are added here.
+  //
+  XML_DOCUMENT             *MkextInfoDocument;
+  //
+  // Array of kexts.
+  //
+  XML_NODE                 *MkextKexts;
+} MKEXT_CONTEXT;
+
 /**
   Read Apple kernel for target architecture (possibly decompressing)
   into pool allocated buffer.
@@ -306,6 +423,50 @@ ReadAppleKernel (
      OUT UINT32             *AllocatedSize,
   IN     UINT32             ReservedSize,
      OUT UINT8              *Digest  OPTIONAL
+  );
+
+/**
+  Create Apple kernel version in integer format.
+  See KERNEL_VERSION on how to build it from integers.
+
+  @param[in]  String      Apple kernel version.
+
+  @returns Kernel version or 0.
+**/
+UINT32
+OcParseDarwinVersion (
+  IN  CONST CHAR8         *String
+  );
+
+/**
+  Read Apple kernel version in integer format.
+
+  @param[in]  Kernel      Apple kernel binary.
+  @param[in]  KernelSize  Apple kernel size.
+
+  @returns Kernel version or 0.
+**/
+UINT32
+OcKernelReadDarwinVersion (
+  IN  CONST UINT8   *Kernel,
+  IN  UINT32        KernelSize
+  );
+
+/**
+  Check whether min <= current <= max is true.
+  When current or max are 0 they are considered infinite.
+
+  @param[in]  CurrentVersion  Current kernel version.
+  @param[in]  MinVersion      Minimal kernel version.
+  @param[in]  MaxVersion      Maximum kernel version.
+
+  @returns TRUE on match.
+**/
+BOOLEAN
+OcMatchDarwinVersion (
+  IN  UINT32  CurrentVersion OPTIONAL,
+  IN  UINT32  MinVersion     OPTIONAL,
+  IN  UINT32  MaxVersion     OPTIONAL
   );
 
 /**
@@ -872,6 +1033,161 @@ CachelessContextHookBuiltin (
   IN     CONST CHAR16         *FileName,
   IN     EFI_FILE_PROTOCOL    *File,
      OUT EFI_FILE_PROTOCOL    **VirtualFile
+  );
+
+/**
+  Decompress mkext buffer while reserving space for injected kexts later on.
+  Specifying zero for OutBufferSize will calculate the size of the
+  buffer required for the decompressed mkext in OutMkextSize.
+
+  @param[in]     Buffer               Mkext buffer.
+  @param[in]     BufferSize           Mkext buffer size.
+  @param[in]     NumReservedKexts     Number of kext slots to reserve for injection.
+  @param[in,out] OutBuffer            Output buffer. Optional if OutBufferSize is zero.
+  @param[in]     OutBufferSize        Total output buffer size. Specify zero to
+                                      calculate output buffer size.
+  @param[in,out] OutMkextSize         Decompressed Mkext size.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+MkextDecompress (
+  IN     CONST UINT8      *Buffer,
+  IN     UINT32           BufferSize,
+  IN     UINT32           NumReservedKexts,
+  IN OUT UINT8            *OutBuffer OPTIONAL,
+  IN     UINT32           OutBufferSize OPTIONAL,
+  IN OUT UINT32           *OutMkextSize
+  );
+
+/**
+  Check if passed mkext is of desired CPU arch.
+
+  @param[in] Mkext          Mkext buffer.
+  @param[in] MkextSize      Mkext buffer size.
+  @param[in] CpuType        Desired CPU arch.
+
+  @return  FALSE if mismatched arch or invalid mkext.
+**/
+BOOLEAN
+MkextCheckCpuType (
+  IN UINT8            *Mkext,
+  IN UINT32           MkextSize,
+  IN MACH_CPU_TYPE    CpuType
+  );
+
+/**
+  Construct mkext context for later modification.
+  Must be freed with MkextContextFree on success.
+  Note that MkextAllocSize never changes, and is to be estimated.
+
+  Mkext buffers cannot contain any compression, and should be run
+  through MkextDecompress first.
+
+  @param[in,out] Context            Mkext context.
+  @param[in,out] Mkext              Decompressed Mkext buffer.
+  @param[in]     MkextSize          Decompressed Mkext buffer size.
+  @param[in]     MkextAllocSize     Decompressed Mkext buffer allocated size.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+MkextContextInit (
+  IN OUT  MKEXT_CONTEXT      *Context,
+  IN OUT  UINT8              *Mkext,
+  IN      UINT32             MkextSize,
+  IN      UINT32             MkextAllocSize
+  );
+
+/**
+  Free resources consumed by mkext context.
+
+  @param[in,out] Context    Mkext context.
+**/
+VOID
+MkextContextFree (
+  IN OUT MKEXT_CONTEXT      *Context
+  );
+
+/**
+  Updated required mkext reserve size to inject this kext.
+
+  @param[in,out] ReservedInfoSize  Current reserved PLIST size, updated.
+  @param[in,out] ReservedExeSize   Current reserved KEXT size, updated.
+  @param[in]     InfoPlistSize     Kext Info.plist size.
+  @param[in]     Executable        Kext executable, optional.
+  @param[in]     ExecutableSize    Kext executable size, optional.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+MkextReserveKextSize (
+  IN OUT UINT32       *ReservedInfoSize,
+  IN OUT UINT32       *ReservedExeSize,
+  IN     UINT32       InfoPlistSize,
+  IN     UINT8        *Executable,
+  IN     UINT32       ExecutableSize OPTIONAL
+  );
+
+/**
+  Perform mkext kext injection.
+
+  @param[in,out] Context          Mkext context.
+  @param[in]     BundlePath       Kext bundle path (e.g. /L/E/mykext.kext).
+  @param[in,out] InfoPlist        Kext Info.plist.
+  @param[in]     InfoPlistSize    Kext Info.plist size.
+  @param[in,out] Executable       Kext executable, optional.
+  @param[in]     ExecutableSize   Kext executable size, optional.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+MkextInjectKext (
+  IN OUT MKEXT_CONTEXT      *Context,
+  IN     CONST CHAR8        *BundlePath,
+  IN     CONST CHAR8        *InfoPlist,
+  IN     UINT32             InfoPlistSize,
+  IN     UINT8              *Executable OPTIONAL,
+  IN     UINT32             ExecutableSize OPTIONAL
+  );
+
+/**
+  Refresh plist and checksum after kext
+  injection and/or patching.
+
+  @param[in,out] Context    Mkext context.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+MkextInjectPatchComplete (
+  IN OUT MKEXT_CONTEXT      *Context
+  );
+
+/**
+  Read mkext for target architecture (possibly decompressing)
+  into pool allocated buffer. If CpuType does not exist in fat
+  mkext, an error is returned.
+
+  @param[in]     File             File handle instance.
+  @param[in]     CpuType          Desired architecture of mkext.
+  @param[in,out] Mkext            Resulting non-fat mkext buffer from pool.
+  @param[out]    MkextSize        Actual mkext size.
+  @param[out]    AllocatedSize    Allocated mkext size (AllocatedSize >= MkextSize).
+  @param[in]     ReservedSize     Allocated extra size for added kernel extensions.
+  @param[in]     NumReservedKexts Number of kext slots to reserve in mkext.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+ReadAppleMkext (
+  IN     EFI_FILE_PROTOCOL  *File,
+  IN     MACH_CPU_TYPE      CpuType,
+     OUT UINT8              **Mkext,
+     OUT UINT32             *MkextSize,
+     OUT UINT32             *AllocatedSize,
+  IN     UINT32             ReservedSize,
+  IN     UINT32             NumReservedKexts
   );
 
 #endif // OC_APPLE_KERNEL_LIB_H
