@@ -41,6 +41,7 @@
   DefaultEntryChoice.c
   DmgBootSupport.c
   HotKeySupport.c
+  ImageLoader.c
   PolicyManagement.c
   OcBootManagementLib.c
   VariableManagement.c
@@ -106,6 +107,7 @@
   OcDevicePathLib
   OcGuardLib
   OcFileLib
+  OcMachoLib
   OcRtcLib
   OcXmlLib
   TimerLib
