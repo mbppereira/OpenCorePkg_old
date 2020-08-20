@@ -819,11 +819,12 @@ OcKernelFileOpen (
   )
 {
   EFI_STATUS         Status;
+  CONST CHAR8        *ForceCacheType;
+  KERNEL_CACHE_TYPE  MaxCacheTypeAllowed;
   BOOLEAN            Result;
   UINT8              *Kernel;
   UINT32             KernelSize;
   UINT32             AllocatedSize;
-  CHAR16             *FileNameCopy;
   EFI_FILE_PROTOCOL  *VirtualFileHandle;
   EFI_STATUS         PrelinkedStatus;
   EFI_TIME           ModificationTime;
@@ -832,6 +833,18 @@ OcKernelFileOpen (
   UINT32             NumReservedKexts;
   UINT32             LinkedExpansion;
   UINT32             ReservedFullSize;
+
+  //
+  // Prevent access to cache files depending on maximum cache type allowed.
+  //
+  ForceCacheType = OC_BLOB_GET (&mOcConfiguration->Kernel.Quirks.ForceKernelCache);
+  if (AsciiStrCmp (ForceCacheType, "Cacheless") == 0) {
+    MaxCacheTypeAllowed = CacheTypeCacheless;
+  } else if (AsciiStrCmp (ForceCacheType, "Mkext") == 0) {
+    MaxCacheTypeAllowed = CacheTypeMkext;
+  } else {
+    MaxCacheTypeAllowed = CacheTypePrelinked;
+  }
 
   //
   // Hook injected OcXXXXXXXX.kext reads from /S/L/E.
@@ -925,6 +938,21 @@ OcKernelFileOpen (
       mOcDarwinVersion = OcKernelReadDarwinVersion (Kernel, KernelSize);
       OcKernelApplyPatches (mOcConfiguration, mOcDarwinVersion, 0, NULL, Kernel, KernelSize);
 
+      //
+      // Disable prelinked if forcing mkext or cacheless, but only on appropriate versions.
+      //
+      if ((OcStriStr (FileName, L"kernelcache") != NULL || OcStriStr (FileName, L"prelinkedkernel") != NULL)
+        && ((MaxCacheTypeAllowed == CacheTypeMkext && mOcDarwinVersion <= KERNEL_VERSION_SNOW_LEOPARD_MAX)
+        || (MaxCacheTypeAllowed == CacheTypeCacheless && mOcDarwinVersion <= KERNEL_VERSION_MAVERICKS_MAX))) {
+        DEBUG ((DEBUG_INFO, "OC: Blocking prelinked due to ForceKernelCache=%s: %a\n", FileName, ForceCacheType));
+
+        FreePool (Kernel);
+        (*NewHandle)->Close(*NewHandle);
+        *NewHandle = NULL;
+
+        return EFI_NOT_FOUND;
+      }
+
       PrelinkedStatus = OcKernelProcessPrelinked (
         mOcConfiguration,
         mOcDarwinVersion,
@@ -945,20 +973,12 @@ OcKernelFileOpen (
       (*NewHandle)->Close(*NewHandle);
 
       //
-      // This was our file, yet firmware is dying.
+      // Virtualise newly created kernel.
       //
-      FileNameCopy = AllocateCopyPool (StrSize (FileName), FileName);
-      if (FileNameCopy == NULL) {
-        DEBUG ((DEBUG_WARN, "OC: Failed to allocate kernel name (%a) copy\n", FileName));
-        FreePool (Kernel);
-        return EFI_OUT_OF_RESOURCES;
-      }
-
-      Status = CreateVirtualFile (FileNameCopy, Kernel, KernelSize, &ModificationTime, &VirtualFileHandle);
+      Status = CreateVirtualFileFileNameCopy (FileName, Kernel, KernelSize, &ModificationTime, &VirtualFileHandle);
       if (EFI_ERROR (Status)) {
-        DEBUG ((DEBUG_WARN, "OC: Failed to virtualise kernel file (%a)\n", FileName));
+        DEBUG ((DEBUG_WARN, "OC: Failed to virtualise kernel file (%s) - %r\n", FileName, Status));
         FreePool (Kernel);
-        FreePool (FileNameCopy);
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -974,6 +994,17 @@ OcKernelFileOpen (
 
   if (OpenMode == EFI_FILE_MODE_READ
     && OcStriStr (FileName, L"Extensions.mkext") != NULL) {
+
+    //
+    // Disable mkext booting if forcing cacheless.
+    //
+    if (MaxCacheTypeAllowed == CacheTypeCacheless) {
+      DEBUG ((DEBUG_INFO, "OC: Blocking mkext due to ForceKernelCache=%s: %a\n", FileName, ForceCacheType));
+      (*NewHandle)->Close(*NewHandle);
+      *NewHandle = NULL;
+
+      return EFI_NOT_FOUND;
+    }
     
     OcKernelLoadKextsAndReserve (
       mOcStorage,
@@ -1019,9 +1050,12 @@ OcKernelFileOpen (
 
         (*NewHandle)->Close(*NewHandle);
 
+        //
+        // Virtualise newly created mkext.
+        //
         Status = CreateVirtualFileFileNameCopy (FileName, Kernel, KernelSize, &ModificationTime, &VirtualFileHandle);
         if (EFI_ERROR (Status)) {
-          DEBUG ((DEBUG_WARN, "OC: Failed to virtualise mkext file (%a) - %r\n", FileName, Status));
+          DEBUG ((DEBUG_WARN, "OC: Failed to virtualise mkext file (%s) - %r\n", FileName, Status));
           FreePool (Kernel);
           return EFI_OUT_OF_RESOURCES;
         }
