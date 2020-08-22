@@ -20,7 +20,6 @@
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Library/OcApfsLib.h>
 #include <Library/OcAppleDiskImageLib.h>
 #include <Library/OcStringLib.h>
 #include <Library/PrintLib.h>
@@ -291,9 +290,7 @@ OcAppleDiskImageInstallBlockIo (
   }
 
   Status = gBS->ConnectController (BlockIoHandle, NULL, NULL, TRUE);
-  if (!EFI_ERROR (Status)) {
-    OcApfsConnectParentDevice (BlockIoHandle);
-  } else {
+  if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_INFO, "OCDI: Failed to connect DMG handle %r\n", Status));
 
     Status = gBS->UninstallMultipleProtocolInterfaces (

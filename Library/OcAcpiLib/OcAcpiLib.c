@@ -19,7 +19,6 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiLib.h>
 #include <Library/UefiBootServicesTableLib.h>
-#include <Library/OcMemoryLib.h>
 #include <Library/OcMiscLib.h>
 
 #include <IndustryStandard/AcpiAml.h>
@@ -561,19 +560,6 @@ AcpiInitContext (
       Context->Tables[DstIndex]->Length,
       Index
       ));
-
-    //
-    // Unlock table if in lower memory.
-    //
-    if ((UINTN)Context->Tables[DstIndex] < BASE_1MB) {
-      DEBUG ((
-        DEBUG_INFO,
-        "OCA: Unlocking table %08x at %p\n",
-        Context->Tables[DstIndex]->Signature,
-        Context->Tables[DstIndex]
-        ));
-      LegacyRegionUnlock ((UINT32)(UINTN)Context->Tables[DstIndex], Context->Tables[DstIndex]->Length);
-    }
 
     if (Context->Tables[DstIndex]->Signature == EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE_SIGNATURE) {
       Context->Fadt = (EFI_ACPI_6_2_FIXED_ACPI_DESCRIPTION_TABLE *) Context->Tables[DstIndex];

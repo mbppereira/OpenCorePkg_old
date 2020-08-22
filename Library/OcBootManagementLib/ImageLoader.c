@@ -27,7 +27,6 @@
 #include <Library/OcDebugLogLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Library/OcAppleSecureBootLib.h>
 #include <Library/OcBootManagementLib.h>
 #include <Library/OcDevicePathLib.h>
 #include <Library/OcFileLib.h>
@@ -160,7 +159,6 @@ InternalEfiLoadImage (
   OUT EFI_HANDLE                   *ImageHandle
   )
 {
-  EFI_STATUS                 SecureBootStatus;
   EFI_STATUS                 Status;
   VOID                       *AllocatedBuffer;
   UINT32                     RealSize;
@@ -198,27 +196,6 @@ InternalEfiLoadImage (
     }
   }
 
-  if (DevicePath != NULL && SourceBuffer != NULL) {
-    SecureBootStatus = OcAppleSecureBootVerify (
-      DevicePath,
-      SourceBuffer,
-      SourceSize
-      );
-  } else {
-    SecureBootStatus = EFI_UNSUPPORTED;
-  }
-
-  //
-  // A security violation means we should just die.
-  //
-  if (SecureBootStatus == EFI_SECURITY_VIOLATION) {
-    DEBUG ((
-      DEBUG_WARN,
-      "OCB: Apple Secure Boot prohibits this boot entry, enforcing!\n"
-      ));
-    return EFI_SECURITY_VIOLATION;
-  }
-
   if (SourceBuffer != NULL) {
     RealSize = (UINT32) SourceSize;
 #ifdef MDE_CPU_IA32
@@ -232,12 +209,6 @@ InternalEfiLoadImage (
       SourceBuffer = NULL;
       SourceSize   = 0;
     }
-  }
-
-  if (SecureBootStatus == EFI_SUCCESS) {
-    //
-    // TODO: Here we should use a custom COFF loader!
-    //
   }
 
   Status = mOriginalEfiLoadImage (

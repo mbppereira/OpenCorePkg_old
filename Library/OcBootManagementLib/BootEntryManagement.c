@@ -351,21 +351,8 @@ AddBootEntryOnFileSystem (
   CHAR16              *TextDevicePath;
   BOOLEAN             IsFolder;
   BOOLEAN             IsGeneric;
-  BOOLEAN             IsReallocated;
 
   EntryType = OcGetBootDevicePathType (DevicePath, &IsFolder, &IsGeneric);
-
-  if (IsFolder && BootContext->PickerContext->DmgLoading == OcDmgLoadingDisabled) {
-    DevicePath    = AppendFileNameDevicePath (DevicePath, L"boot.efi");
-    IsFolder      = FALSE;
-    IsReallocated = TRUE;
-    DEBUG ((DEBUG_INFO, "OCB: Switching DMG boot path to boot.efi due to policy\n"));
-    if (DevicePath == NULL) {
-      return EFI_OUT_OF_RESOURCES;
-    }
-  } else {
-    IsReallocated = FALSE;
-  }
 
   DEBUG_CODE_BEGIN ();
 
@@ -398,9 +385,6 @@ AddBootEntryOnFileSystem (
   //
   if (BootContext->PickerContext->HideAuxiliary && EntryType == OC_BOOT_APPLE_RECOVERY) {
     DEBUG ((DEBUG_INFO, "OCB: Discarding recovery entry due to auxiliary\n"));
-    if (IsReallocated) {
-      FreePool (DevicePath);
-    }
     return EFI_UNSUPPORTED;
   }
 
@@ -409,9 +393,6 @@ AddBootEntryOnFileSystem (
   //
   if (BootContext->PickerContext->HideAuxiliary && EntryType == OC_BOOT_APPLE_TIME_MACHINE) {
     DEBUG ((DEBUG_INFO, "OCB: Discarding time machine entry due to auxiliary\n"));
-    if (IsReallocated) {
-      FreePool (DevicePath);
-    }
     return EFI_UNSUPPORTED;
   }
 
@@ -422,9 +403,6 @@ AddBootEntryOnFileSystem (
   if (RecoveryPart ? FileSystem->RecoveryFs->LoaderFs : FileSystem->LoaderFs
     && IsOpenCoreBootloader (DevicePath)) {
     DEBUG ((DEBUG_INFO, "OCB: Discarding discovered OpenCore bootloader\n"));
-    if (IsReallocated) {
-      FreePool (DevicePath);
-    }
     return EFI_UNSUPPORTED;
   }
 
@@ -462,9 +440,6 @@ AddBootEntryOnFileSystem (
         //
         RemoveEntryList (Link);
         InsertTailList (&FileSystem->BootEntries, Link);
-        if (IsReallocated) {
-          FreePool (DevicePath);
-        }
         return EFI_ALREADY_STARTED;
       }
     }
@@ -475,9 +450,6 @@ AddBootEntryOnFileSystem (
   //
   BootEntry = AllocateZeroPool (sizeof (*BootEntry));
   if (BootEntry == NULL) {
-    if (IsReallocated) {
-      FreePool (DevicePath);
-    }
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -490,9 +462,6 @@ AddBootEntryOnFileSystem (
   Status = InternalDescribeBootEntry (BootEntry);
   if (EFI_ERROR (Status)) {
     FreePool (BootEntry);
-    if (IsReallocated) {
-      FreePool (DevicePath);
-    }
     return Status;
   }
 

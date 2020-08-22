@@ -13,6 +13,7 @@ OBJS    = $(PROJECT).o \
 	PrelinkedKext.o \
 	PrelinkedContext.o \
 	MkextContext.o \
+	MkextReader.o \
 	Vtables.o \
 	Link.o \
 	KernelReader.o \

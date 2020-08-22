@@ -301,14 +301,6 @@ typedef struct {
   // Virtual kmod_info_t address.
   //
   UINT64                   VirtualKmod;
-  //
-  // Pointer to KXLD state (read only, it is allocated in PrelinkedStateKexts).
-  //
-  CONST VOID               *KxldState;
-  //
-  // Pointer to KXLD state (read only, it is allocated in PrelinkedStateKexts).
-  //
-  UINT32                   KxldStateSize;
 } PATCHER_CONTEXT;
 
 //
@@ -419,7 +411,7 @@ typedef struct {
   //
   // CPU type.
   //
-  BOOLEAN                   Is32Bit;
+  BOOLEAN                   Is64Bit;
   //
   // Current number of kexts.
   //
@@ -562,12 +554,9 @@ KernelQuirkApply (
 
 /**
   Read Apple kernel for target architecture (possibly decompressing)
-  into pool allocated buffer. If CpuType does not exist in fat
-  mkext, an error is returned.
+  into pool allocated buffer.
 
   @param[in]      File           File handle instance.
-  @param[in]      Prefer32Bit    Prefer 32-bit in case of fat binary.
-  @param[out]     Is32Bit        Whether resulting kernel is 32-bit or not.
   @param[in,out]  Kernel         Resulting non-fat kernel buffer from pool.
   @param[out]     KernelSize     Actual kernel size.
   @param[out]     AllocatedSize  Allocated kernel size (AllocatedSize >= KernelSize).
@@ -579,39 +568,11 @@ KernelQuirkApply (
 EFI_STATUS
 ReadAppleKernel (
   IN     EFI_FILE_PROTOCOL  *File,
-  IN     BOOLEAN            Prefer32Bit,
-     OUT BOOLEAN            *Is32Bit,
      OUT UINT8              **Kernel,
      OUT UINT32             *KernelSize,
      OUT UINT32             *AllocatedSize,
   IN     UINT32             ReservedSize,
      OUT UINT8              *Digest  OPTIONAL
-  );
-
-/**
-  Read mkext for target architecture (possibly decompressing)
-  into pool allocated buffer. If CpuType does not exist in fat
-  mkext, an error is returned.
-
-  @param[in]     File             File handle instance.
-  @param[in]     Prefer32Bit      Prefer 32-bit in case of fat binary.
-  @param[in,out] Mkext            Resulting non-fat mkext buffer from pool.
-  @param[out]    MkextSize        Actual mkext size.
-  @param[out]    AllocatedSize    Allocated mkext size (AllocatedSize >= MkextSize).
-  @param[in]     ReservedSize     Allocated extra size for added kernel extensions.
-  @param[in]     NumReservedKexts Number of kext slots to reserve in mkext.
-
-  @return  EFI_SUCCESS on success.
-**/
-EFI_STATUS
-ReadAppleMkext (
-  IN     EFI_FILE_PROTOCOL  *File,
-  IN     BOOLEAN            Prefer32Bit,
-     OUT UINT8              **Mkext,
-     OUT UINT32             *MkextSize,
-     OUT UINT32             *AllocatedSize,
-  IN     UINT32             ReservedSize,
-  IN     UINT32             NumReservedKexts
   );
 
 /**
@@ -798,7 +759,7 @@ PrelinkedContextApplyPatch (
   @param[in,out] Context         Prelinked context.
   @param[in]     Quirk           Kext quirk to apply.
 
-  @retval EFI_SUCCESS on success.
+  @return  EFI_SUCCESS on success.
 **/
 EFI_STATUS
 PrelinkedContextApplyQuirk (
@@ -806,19 +767,12 @@ PrelinkedContextApplyQuirk (
   IN     KERNEL_QUIRK_NAME    Quirk
   );
 
-/**
-  Update Mach-O header with new commands.
-
-  @Param[in,out] Context      Prelinked context.
-
-  @retval EFI_SUCCESS on success.
-**/
 EFI_STATUS
 KcRebuildMachHeader (
   IN OUT PRELINKED_CONTEXT  *Context
   );
 
-/**
+/*
   Returns the size required to store a segment's fixup chains information.
 
   @param[in] SegmentSize  The size, in bytes, of the segment to index.
@@ -826,20 +780,20 @@ KcRebuildMachHeader (
   @retval 0      The segment is too large to index with a single structure.
   @retval other  The size, in bytes, required to store a segment's fixup chain
                  information.
-**/
+*/
 UINT32
 KcGetSegmentFixupChainsSize (
   IN UINT32  SegmentSize
   );
 
-/**
+/*
   Initialises a structure that stores a segments's fixup chains information.
 
   @param[out] SegChain      The information structure to initialise.
   @param[in]  SegChainSize  The size, in bytes, available to SegChain.
   @param[in]  VmAddress     The virtual address of the segment to index.
   @param[in]  VmSize        The virtual size of the segment to index.
-**/
+*/
 EFI_STATUS
 KcInitKextFixupChains (
   IN OUT PRELINKED_CONTEXT  *Context,
@@ -847,21 +801,21 @@ KcInitKextFixupChains (
   IN     UINT32             ReservedSize
   );
 
-/**
+/*
   Indexes all relocations of MachContext into the kernel described by Context.
 
   @param[in,out] Context      Prelinked context.
   @param[in]     MachContext  The context of the Mach-O to index. It must have
                               been prelinked by OcAppleKernelLib. The image
                               must reside in Segment.
-**/
+*/
 VOID
 KcKextIndexFixups (
   IN OUT PRELINKED_CONTEXT  *Context,
   IN     OC_MACHO_CONTEXT   *MachContext
   );
 
-/**
+/*
   Retrieves a KC KEXT's virtual size.
 
   @param[in] Context        Prelinked context.
@@ -869,14 +823,14 @@ KcKextIndexFixups (
 
   @retval 0      An error has occured.
   @retval other  The virtual size, in bytes, of the KEXT at SourceAddress.
-**/
+*/
 UINT32
 KcGetKextSize (
   IN PRELINKED_CONTEXT  *Context,
   IN UINT64             SourceAddress
   );
 
-/**
+/*
   Apply the delta from KC header to the file's offsets.
 
   @param[in,out] Context  The context of the KEXT to rebase.
@@ -884,25 +838,11 @@ KcGetKextSize (
 
   @retval EFI_SUCCESS  The file has beem rebased successfully.
   @retval other        An error has occured.
-**/
+*/
 EFI_STATUS
 KcKextApplyFileDelta (
   IN OUT OC_MACHO_CONTEXT  *Context,
   IN     UINT32            Delta
-  );
-
-/**
-  Update address or dyld fixup value to real address.
-
-  @param[in] Value           Value or fixup.
-  @param[in] Name            Source name, optional.
-
-  @return real address on sucess.
-**/
-UINT64
-KcFixupValue (
-  IN UINT64             Value,
-  IN CONST CHAR8        *Name OPTIONAL
   );
 
 /**
@@ -1297,6 +1237,32 @@ MkextContextApplyQuirk (
 EFI_STATUS
 MkextInjectPatchComplete (
   IN OUT MKEXT_CONTEXT      *Context
+  );
+
+/**
+  Read mkext for target architecture (possibly decompressing)
+  into pool allocated buffer. If CpuType does not exist in fat
+  mkext, an error is returned.
+
+  @param[in]     File             File handle instance.
+  @param[in]     CpuType          Desired architecture of mkext.
+  @param[in,out] Mkext            Resulting non-fat mkext buffer from pool.
+  @param[out]    MkextSize        Actual mkext size.
+  @param[out]    AllocatedSize    Allocated mkext size (AllocatedSize >= MkextSize).
+  @param[in]     ReservedSize     Allocated extra size for added kernel extensions.
+  @param[in]     NumReservedKexts Number of kext slots to reserve in mkext.
+
+  @return  EFI_SUCCESS on success.
+**/
+EFI_STATUS
+ReadAppleMkext (
+  IN     EFI_FILE_PROTOCOL  *File,
+  IN     MACH_CPU_TYPE      CpuType,
+     OUT UINT8              **Mkext,
+     OUT UINT32             *MkextSize,
+     OUT UINT32             *AllocatedSize,
+  IN     UINT32             ReservedSize,
+  IN     UINT32             NumReservedKexts
   );
 
 #endif // OC_APPLE_KERNEL_LIB_H

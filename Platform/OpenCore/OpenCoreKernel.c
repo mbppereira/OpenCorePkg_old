@@ -32,7 +32,6 @@ STATIC OC_CPU_INFO         *mOcCpuInfo;
 STATIC UINT8               mKernelDigest[SHA384_DIGEST_SIZE];
 
 STATIC UINT32              mOcDarwinVersion;
-STATIC BOOLEAN             mUse32BitKernel;
 
 STATIC CACHELESS_CONTEXT   mOcCachelessContext;
 STATIC BOOLEAN             mOcCachelessInProgress;
@@ -823,8 +822,6 @@ OcKernelFileOpen (
   CONST CHAR8        *ForceCacheType;
   KERNEL_CACHE_TYPE  MaxCacheTypeAllowed;
   BOOLEAN            Result;
-  UINT32             DarwinVersion;
-  BOOLEAN            IsKernel32Bit;
   UINT8              *Kernel;
   UINT32             KernelSize;
   UINT32             AllocatedSize;
@@ -890,7 +887,7 @@ OcKernelFileOpen (
   if (OpenMode == EFI_FILE_MODE_READ
     && OcStriStr (FileName, L"kernel") != NULL
     && StrCmp (FileName, L"System\\Library\\Kernels\\kernel") != 0
-    && OcStriStr (FileName, L".kext\\") == NULL
+    && OcStriStr (FileName, L".kext") == NULL
     && OcStriStr (FileName, L".im4m") == NULL) {
 
     OcKernelLoadKextsAndReserve (
@@ -917,14 +914,9 @@ OcKernelFileOpen (
       return EFI_UNSUPPORTED;
     }
 
-    //
-    // Read last used architecture for kernel.
-    //
-    DEBUG ((DEBUG_INFO, "OC: Trying %a XNU hook on %s\n", mUse32BitKernel ? "32-bit" : "64-bit", FileName));
+    DEBUG ((DEBUG_INFO, "OC: Trying XNU hook on %s\n", FileName));
     Status = ReadAppleKernel (
       *NewHandle,
-      mUse32BitKernel,
-      &IsKernel32Bit,
       &Kernel,
       &KernelSize,
       &AllocatedSize,
@@ -933,8 +925,7 @@ OcKernelFileOpen (
       );
     DEBUG ((
       DEBUG_INFO,
-      "OC: Result of %a XNU hook on %s (%02X%02X%02X%02X) is %r\n",
-      IsKernel32Bit ? "32-bit" : "64-bit",
+      "OC: Result of XNU hook on %s (%02X%02X%02X%02X) is %r\n",
       FileName,
       mKernelDigest[0],
       mKernelDigest[1],
@@ -944,60 +935,9 @@ OcKernelFileOpen (
       ));
 
     if (!EFI_ERROR (Status)) {
-      //
-      // Get kernel version. If this differs from what is cached, recheck 64-bit suitability.
-      //
-      DarwinVersion = OcKernelReadDarwinVersion (Kernel, KernelSize);
-      if (DarwinVersion != mOcDarwinVersion || mUse32BitKernel != IsKernel32Bit) {
-        //
-        // If a different kernel arch is required, but we did not originally read it,
-        // we'll need to try to get the kernel again.
-        //
-        mUse32BitKernel = !OcPlatformIs64BitSupported (DarwinVersion);
-        if (mUse32BitKernel != IsKernel32Bit) {
-          FreePool (Kernel);
+      mOcDarwinVersion = OcKernelReadDarwinVersion (Kernel, KernelSize);
+      OcKernelApplyPatches (mOcConfiguration, mOcDarwinVersion, 0, NULL, Kernel, KernelSize);
 
-          DEBUG ((DEBUG_INFO, "OC: Wrong arch read, retrying %a XNU hook on %s\n", mUse32BitKernel ? "32-bit" : "64-bit", FileName));
-          Status = ReadAppleKernel (
-            *NewHandle,
-            mUse32BitKernel,
-            &IsKernel32Bit,
-            &Kernel,
-            &KernelSize,
-            &AllocatedSize,
-            ReservedFullSize,
-            mKernelDigest
-            );
-          DEBUG ((
-            DEBUG_INFO,
-            "OC: Result of %a XNU hook on %s (%02X%02X%02X%02X) is %r\n",
-            IsKernel32Bit ? "32-bit" : "64-bit",
-            FileName,
-            mKernelDigest[0],
-            mKernelDigest[1],
-            mKernelDigest[2],
-            mKernelDigest[3],
-            Status
-            ));
-
-          if (!EFI_ERROR (Status)) {
-            DarwinVersion = OcKernelReadDarwinVersion (Kernel, KernelSize);
-
-            //
-            // Ensure we are now matching the requested arch.
-            //
-            if (mUse32BitKernel != IsKernel32Bit) {
-              FreePool (Kernel);
-              Status = EFI_INVALID_PARAMETER;
-            }
-          }
-        }
-
-        mOcDarwinVersion = DarwinVersion;
-      }
-    }
-
-    if (!EFI_ERROR (Status)) {
       //
       // Disable prelinked if forcing mkext or cacheless, but only on appropriate versions.
       //
@@ -1013,7 +953,6 @@ OcKernelFileOpen (
         return EFI_NOT_FOUND;
       }
 
-      OcKernelApplyPatches (mOcConfiguration, mOcDarwinVersion, 0, NULL, Kernel, KernelSize);
       PrelinkedStatus = OcKernelProcessPrelinked (
         mOcConfiguration,
         mOcDarwinVersion,
@@ -1085,10 +1024,10 @@ OcKernelFileOpen (
       return EFI_UNSUPPORTED;
     }
 
-    DEBUG ((DEBUG_INFO, "OC: Trying %a mkext hook on %s\n", mUse32BitKernel ? "32-bit" : "64-bit", FileName));
+    DEBUG ((DEBUG_INFO, "OC: Trying mkext hook on %s\n", FileName));
     Status = ReadAppleMkext (
       *NewHandle,
-      mUse32BitKernel,
+      MachCpuTypeX8664,
       &Kernel,
       &KernelSize,
       &AllocatedSize,
@@ -1216,14 +1155,6 @@ OcLoadKernelSupport (
     mOcCpuInfo              = CpuInfo;
     mOcDarwinVersion        = 0;
     mOcCachelessInProgress  = FALSE;
-
-#if defined(MDE_CPU_IA32)
-    mUse32BitKernel         = TRUE;
-#elif defined(MDE_CPU_X64)
-    mUse32BitKernel         = FALSE;
-#else
-#error "Unsupported architecture"
-#endif
   } else {
     DEBUG ((DEBUG_ERROR, "OC: Failed to enable vfs - %r\n", Status));
   }

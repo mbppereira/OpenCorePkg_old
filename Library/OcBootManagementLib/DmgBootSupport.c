@@ -16,7 +16,6 @@
 
 #include <Guid/FileInfo.h>
 
-#include <Library/OcAppleSecureBootLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
@@ -474,13 +473,7 @@ InternalLoadDmg (
               );
   Context->DevicePath = DevPath;
 
-  if (DevPath != NULL) {
-    //
-    // If we succeeded, we need to disable Apple Secure Boot, as DMG images
-    // are currently only verified with the chunklist.
-    //
-    OcAppleSecureBootSetDmgLoading (TRUE);
-  } else {
+  if (DevPath == NULL) {
     DEBUG ((DEBUG_INFO, "OCB: Failed to retrieve boot file from DMG\n"));
 
     OcAppleDiskImageFreeFile (Context->DmgContext);
@@ -508,10 +501,5 @@ InternalUnloadDmg (
     OcAppleDiskImageFreeContext (DmgLoadContext->DmgContext);
     FreePool (DmgLoadContext->DmgContext);
     DmgLoadContext->DevicePath = NULL;
-    //
-    // This code should never execute, as with Apple Secure Boot
-    // it should always reboot on failure, but just in case.
-    //
-    OcAppleSecureBootSetDmgLoading (FALSE);
   }
 }

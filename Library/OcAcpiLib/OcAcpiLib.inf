@@ -34,7 +34,6 @@
 [LibraryClasses]
   BaseLib
   OcFileLib
-  OcMemoryLib
   OcMiscLib
   PrintLib
 

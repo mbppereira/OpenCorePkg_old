@@ -29,7 +29,6 @@ buildutil() {
   for util in "${UTILS[@]}"; do
     cd "$util" || exit 1
     echo "Building ${util}..."
-    make clean || exit 1
     make -j "$cores" || exit 1
     #
     # FIXME: Do not build RsaTool for Win32 without OpenSSL.
