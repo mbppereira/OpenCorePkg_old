@@ -296,12 +296,6 @@ VOID
 OcMiscUefiQuirksLoaded (
   IN OC_GLOBAL_CONFIG   *Config
   );
-<<<<<<< HEAD
-VOID
-OcLoadBooterUefiSupport (
-  IN OC_GLOBAL_CONFIG  *Config
-  );
-=======
 
 /**
   Determine platform support for 64-bit kernel mode based
@@ -314,5 +308,4 @@ OcPlatformIs64BitSupported (
   IN UINT32     KernelVersion
   );
 
->>>>>>> upstream/master
 #endif // OPEN_CORE_H
