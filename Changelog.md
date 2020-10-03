@@ -13,6 +13,10 @@ OpenCore Changelog
 - Fixed issues loading 10.7 EfiBoot
 - Added `Type` to `ReservedMemory` to fulfil hibernation hack needs
 - Added workaround to displaying `Preboot` instead of `Macintosh HD`
+- Added prelinkedkernel 32-bit kext injection (10.6-10.7)
+- Added `SystemMemoryStatus` to override memory replacement on some models
+- Added older Pentium CPU recognition in SMBIOS 
+- Added `ExtendBTFeatureFlags` to properly set `FeatureFlags` for Bluetooth (which substitutes BT4LEContinuityFixup) 
 
 #### v0.6.1
 - Improved recognition of early pressed hotkeys, thx @varahash

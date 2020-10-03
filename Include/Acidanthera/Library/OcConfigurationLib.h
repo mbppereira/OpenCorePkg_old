@@ -212,8 +212,11 @@
 /// Kernel emulation preferences.
 ///
 #define OC_KERNEL_EMULATE_FIELDS(_,__) \
-  _(UINT32                      , Cpuid1Data       , [4] , {0}                                          , () ) \
-  _(UINT32                      , Cpuid1Mask       , [4] , {0}                                          , () )
+  _(UINT32                      , Cpuid1Data          , [4] , {0}                         , () ) \
+  _(UINT32                      , Cpuid1Mask          , [4] , {0}                         , () ) \
+  _(BOOLEAN                     , DummyPowerManagement,     , FALSE                       , () ) \
+  _(OC_STRING                   , MaxKernel           ,     , OC_STRING_CONSTR ("", _, __), OC_DESTR (OC_STRING) ) \
+  _(OC_STRING                   , MinKernel           ,     , OC_STRING_CONSTR ("", _, __), OC_DESTR (OC_STRING) )
   OC_DECLARE (OC_KERNEL_EMULATE)
 
 ///
@@ -259,7 +262,7 @@
   _(BOOLEAN                     , DisableIoMapper             ,     , FALSE  , ()) \
   _(BOOLEAN                     , DisableLinkeditJettison     ,     , FALSE  , ()) \
   _(BOOLEAN                     , DisableRtcChecksum          ,     , FALSE  , ()) \
-  _(BOOLEAN                     , DummyPowerManagement        ,     , FALSE  , ()) \
+  _(BOOLEAN                     , ExtendBTFeatureFlags        ,     , FALSE  , ()) \
   _(BOOLEAN                     , ExternalDiskIcons           ,     , FALSE  , ()) \
   _(BOOLEAN                     , IncreasePciBarSize          ,     , FALSE  , ()) \
   _(BOOLEAN                     , LapicKernelPanic            ,     , FALSE  , ()) \
@@ -416,6 +419,7 @@ typedef enum {
   _(OC_STRING                   , SystemSerialNumber ,     , OC_STRING_CONSTR ("OPENCORE_SN1", _, __)     , OC_DESTR (OC_STRING) ) \
   _(OC_STRING                   , SystemUuid         ,     , OC_STRING_CONSTR ("", _, __)                 , OC_DESTR (OC_STRING) ) \
   _(OC_STRING                   , Mlb                ,     , OC_STRING_CONSTR ("OPENCORE_MLB_SN11", _, __), OC_DESTR (OC_STRING) ) \
+  _(OC_STRING                   , SystemMemoryStatus ,     , OC_STRING_CONSTR ("Auto", _, __)             , OC_DESTR (OC_STRING) ) \
   _(UINT16                      , ProcessorType      ,     , 0                                            , () )                   \
   _(UINT8                       , Rom                , [6] , {0}                                          , () )                   \
   _(BOOLEAN                     , SpoofVendor        ,     , FALSE                                        , () )                   \

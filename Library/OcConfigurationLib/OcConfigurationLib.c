@@ -265,8 +265,11 @@ mKernelBlockSchema = OC_SCHEMA_DICT (NULL, mKernelBlockSchemaEntry);
 STATIC
 OC_SCHEMA
 mKernelEmulateSchema[] = {
-  OC_SCHEMA_DATAF_IN   ("Cpuid1Data",       OC_GLOBAL_CONFIG, Kernel.Emulate.Cpuid1Data),
-  OC_SCHEMA_DATAF_IN   ("Cpuid1Mask",       OC_GLOBAL_CONFIG, Kernel.Emulate.Cpuid1Mask),
+  OC_SCHEMA_DATAF_IN   ("Cpuid1Data",           OC_GLOBAL_CONFIG, Kernel.Emulate.Cpuid1Data),
+  OC_SCHEMA_DATAF_IN   ("Cpuid1Mask",           OC_GLOBAL_CONFIG, Kernel.Emulate.Cpuid1Mask),
+  OC_SCHEMA_BOOLEAN_IN ("DummyPowerManagement", OC_GLOBAL_CONFIG, Kernel.Emulate.DummyPowerManagement),
+  OC_SCHEMA_STRING_IN  ("MaxKernel",            OC_GLOBAL_CONFIG, Kernel.Emulate.MaxKernel),
+  OC_SCHEMA_STRING_IN  ("MinKernel",            OC_GLOBAL_CONFIG, Kernel.Emulate.MinKernel),
 };
 
 STATIC
@@ -321,7 +324,7 @@ mKernelQuirksSchema[] = {
   OC_SCHEMA_BOOLEAN_IN ("DisableIoMapper",         OC_GLOBAL_CONFIG, Kernel.Quirks.DisableIoMapper),
   OC_SCHEMA_BOOLEAN_IN ("DisableLinkeditJettison", OC_GLOBAL_CONFIG, Kernel.Quirks.DisableLinkeditJettison),
   OC_SCHEMA_BOOLEAN_IN ("DisableRtcChecksum",      OC_GLOBAL_CONFIG, Kernel.Quirks.DisableRtcChecksum),
-  OC_SCHEMA_BOOLEAN_IN ("DummyPowerManagement",    OC_GLOBAL_CONFIG, Kernel.Quirks.DummyPowerManagement),
+  OC_SCHEMA_BOOLEAN_IN ("ExtendBTFeatureFlags",    OC_GLOBAL_CONFIG, Kernel.Quirks.ExtendBTFeatureFlags),
   OC_SCHEMA_BOOLEAN_IN ("ExternalDiskIcons",       OC_GLOBAL_CONFIG, Kernel.Quirks.ExternalDiskIcons),
   OC_SCHEMA_BOOLEAN_IN ("IncreasePciBarSize",      OC_GLOBAL_CONFIG, Kernel.Quirks.IncreasePciBarSize),
   OC_SCHEMA_BOOLEAN_IN ("LapicKernelPanic",        OC_GLOBAL_CONFIG, Kernel.Quirks.LapicKernelPanic),
@@ -501,6 +504,7 @@ mPlatformConfigurationGenericSchema[] = {
   OC_SCHEMA_INTEGER_IN ("ProcessorType",      OC_GLOBAL_CONFIG, PlatformInfo.Generic.ProcessorType),
   OC_SCHEMA_DATAF_IN   ("ROM",                OC_GLOBAL_CONFIG, PlatformInfo.Generic.Rom),
   OC_SCHEMA_BOOLEAN_IN ("SpoofVendor",        OC_GLOBAL_CONFIG, PlatformInfo.Generic.SpoofVendor),
+  OC_SCHEMA_STRING_IN  ("SystemMemoryStatus", OC_GLOBAL_CONFIG, PlatformInfo.Generic.SystemMemoryStatus),
   OC_SCHEMA_STRING_IN  ("SystemProductName",  OC_GLOBAL_CONFIG, PlatformInfo.Generic.SystemProductName),
   OC_SCHEMA_STRING_IN  ("SystemSerialNumber", OC_GLOBAL_CONFIG, PlatformInfo.Generic.SystemSerialNumber),
   OC_SCHEMA_STRING_IN  ("SystemUUID",         OC_GLOBAL_CONFIG, PlatformInfo.Generic.SystemUuid),
