@@ -266,6 +266,7 @@
   _(BOOLEAN                     , ExternalDiskIcons           ,     , FALSE  , ()) \
   _(BOOLEAN                     , IncreasePciBarSize          ,     , FALSE  , ()) \
   _(BOOLEAN                     , LapicKernelPanic            ,     , FALSE  , ()) \
+  _(BOOLEAN                     , LegacyCommpage              ,     , FALSE  , ()) \
   _(BOOLEAN                     , PanicNoKextDump             ,     , FALSE  , ()) \
   _(BOOLEAN                     , PowerTimeoutKernelPanic     ,     , FALSE  , ()) \
   _(BOOLEAN                     , ThirdPartyDrives            ,     , FALSE  , ()) \
