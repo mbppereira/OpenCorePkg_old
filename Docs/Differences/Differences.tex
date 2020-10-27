@@ -1,7 +1,7 @@
 \documentclass[]{article}
 %DIF LATEXDIFF DIFFERENCE FILE
 %DIF DEL PreviousConfiguration.tex   Wed Oct  7 20:11:26 2020
-%DIF ADD ../Configuration.tex        Sat Oct 17 17:35:11 2020
+%DIF ADD ../Configuration.tex        Mon Oct 26 19:19:07 2020
 
 \usepackage{lmodern}
 \usepackage{amssymb,amsmath}
@@ -3100,7 +3100,7 @@ entry choice will update till next manual reconfiguration.
   \end{itemize}
 
   \emph{Note 1}: Activated \texttt{KeySupport}, \texttt{OpenUsbKbDxe}, or similar driver is required
-  for key handling to work. On \DIFdelbegin \DIFdel{many firmwares }\DIFdelend \DIFaddbegin \DIFadd{sevaral types of firmware, }\DIFaddend it is not possible to get all the \DIFdelbegin \DIFdel{keys function}\DIFdelend \DIFaddbegin \DIFadd{key functions}\DIFaddend .
+  for key handling to work. On \DIFdelbegin \DIFdel{many firmwares }\DIFdelend \DIFaddbegin \DIFadd{several types of firmware, }\DIFaddend it is not possible to get all the \DIFdelbegin \DIFdel{keys function}\DIFdelend \DIFaddbegin \DIFadd{key functions}\DIFaddend .
 
   \emph{Note 2}: In addition to \texttt{OPT} OpenCore supports \texttt{Escape} key to display picker when
   \texttt{ShowPicker} is disabled. This key exists for \DIFaddbegin \DIFadd{the }\DIFaddend \texttt{Apple} picker mode and for
@@ -6093,7 +6093,23 @@ functioning. Feature highlights:
   set to \texttt{true}.
 
 \item
-  \texttt{ClearScreenOnModeSwitch}\\
+  \DIFaddbegin \texttt{\DIFadd{ForceResolution}}\\
+  \textbf{\DIFadd{Type}}\DIFadd{: }\texttt{\DIFadd{plist\ boolean}}\\
+  \textbf{\DIFadd{Failsafe}}\DIFadd{: }\texttt{\DIFadd{false}}\\
+  \textbf{\DIFadd{Description}}\DIFadd{: Forces }\texttt{\DIFadd{Resolution}} \DIFadd{to be set in cases where the desired
+  resolution is not available by default, such as on legacy Intel GMA and first
+  generation Intel HD Graphics (Ironlake/Arrandale). Setting }\texttt{\DIFadd{Resolution}} \DIFadd{to
+  }\texttt{\DIFadd{Max}} \DIFadd{will try to pull the largest available resolution from the connected
+  display's EDID.
+}
+
+  \emph{\DIFadd{Note}}\DIFadd{: This option depends on the }\href{https://github.com/acidanthera/OpenCorePkg/blob/master/Include/Acidanthera/Protocol/OcForceResolution.h}{\texttt{\DIFadd{OC\_FORCE\_RESOLUTION\_PROTOCOL}}}
+  \DIFadd{protocol being present. This protocol is currently only supported by }\texttt{\DIFadd{OpenDuetPkg}}\DIFadd{. The
+  }\texttt{\DIFadd{OpenDuetPkg}} \DIFadd{implementation currently only supports Intel iGPUs.
+}
+
+\item
+  \DIFaddend \texttt{ClearScreenOnModeSwitch}\\
   \textbf{Type}: \texttt{plist\ boolean}\\
   \textbf{Failsafe}: \texttt{false}\\
   \textbf{Description}: Some \DIFdelbegin \DIFdel{firmwares clear only part of }\DIFdelend \DIFaddbegin \DIFadd{types of firmware only clear part of the }\DIFaddend screen when switching
